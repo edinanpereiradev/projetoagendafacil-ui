@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AgendaFácil</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="container">
+    <div class="topo">
+      <div class="selo">✓</div>
+      <h1>AgendaFácil</h1>
+      <p>Agendamento simples para você e seu cliente</p>
+    </div>
+
+    <div class="card">
+      <div class="abas">
+        <button id="abaLogin" class="ativo" onclick="mudarAba('login')">Entrar</button>
+        <button id="abaCadastro" onclick="mudarAba('cadastro')">Criar conta</button>
+      </div>
+
+      <!-- LOGIN -->
+      <form id="formLogin">
+        <label>E-mail</label>
+        <input type="email" id="loginEmail" required placeholder="voce@email.com">
+        <label>Senha</label>
+        <input type="password" id="loginSenha" required placeholder="••••••••">
+        <button class="btn" type="submit">Entrar</button>
+      </form>
+
+      <!-- CADASTRO -->
+      <form id="formCadastro" class="oculto">
+        <label>Eu sou</label>
+        <select id="cadTipo" onchange="alternarCamposTipo()">
+          <option value="cliente">Cliente (quero agendar serviços)</option>
+          <option value="prestador">Prestador (quero oferecer serviços)</option>
+        </select>
+
+        <label>Nome completo</label>
+        <input type="text" id="cadNome" required placeholder="Seu nome">
+
+        <div id="campoNegocio" class="oculto">
+          <label>Nome do negócio</label>
+          <input type="text" id="cadNegocio" placeholder="Ex: Studio Lays Karla">
+          <label>Especialidade</label>
+          <input type="text" id="cadEspecialidade" placeholder="Ex: Esteticista">
+        </div>
+
+        <div id="campoTelefone">
+          <label>WhatsApp / Telefone</label>
+          <input type="text" id="cadTelefone" placeholder="(00) 00000-0000">
+        </div>
+
+        <label>E-mail</label>
+        <input type="email" id="cadEmail" required placeholder="voce@email.com">
+        <label>Senha</label>
+        <input type="password" id="cadSenha" required minlength="4" placeholder="mínimo 4 caracteres">
+        <button class="btn" type="submit">Criar conta</button>
+      </form>
+
+      <div id="mensagem"></div>
+    </div>
+
+    <p class="link-baixo">Demo: prestador <strong>lays@studiolayskarla.com</strong> / cliente <strong>juliana@email.com</strong> — senha <strong>123456</strong> (após rodar <code>npm run seed</code>)</p>
+  </div>
+
+<script src="js/api.js"></script>
+<script>
+function mudarAba(aba) {
+  document.getElementById('abaLogin').classList.toggle('ativo', aba === 'login');
+  document.getElementById('abaCadastro').classList.toggle('ativo', aba === 'cadastro');
+  document.getElementById('formLogin').classList.toggle('oculto', aba !== 'login');
+  document.getElementById('formCadastro').classList.toggle('oculto', aba !== 'cadastro');
+  document.getElementById('mensagem').innerHTML = '';
+}
+
+function alternarCamposTipo() {
+  const tipo = document.getElementById('cadTipo').value;
+  document.getElementById('campoNegocio').classList.toggle('oculto', tipo !== 'prestador');
+  document.getElementById('campoTelefone').classList.toggle('oculto', tipo !== 'cliente');
+}
+
+function mostrarErro(texto) {
+  document.getElementById('mensagem').innerHTML = `<div class="erro">${texto}</div>`;
+}
+
+function redirecionar(usuario) {
+  window.location.href = usuario.tipo === 'cliente' ? 'cliente.html' : 'prestador.html';
+}
+
+document.getElementById('formLogin').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  try {
+    const resp = await api('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({
+        email: document.getElementById('loginEmail').value,
+        senha: document.getElementById('loginSenha').value
+      })
+    });
+    Sessao.salvar(resp.token, resp.usuario);
+    redirecionar(resp.usuario);
+  } catch (err) { mostrarErro(err.message); }
+});
+
+document.getElementById('formCadastro').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const tipo = document.getElementById('cadTipo').value;
+  try {
+    const resp = await api('/auth/registrar', {
+      method: 'POST',
+      body: JSON.stringify({
+        nome: document.getElementById('cadNome').value,
+        email: document.getElementById('cadEmail').value,
+        senha: document.getElementById('cadSenha').value,
+        tipo,
+        telefone: document.getElementById('cadTelefone').value,
+        nomeNegocio: document.getElementById('cadNegocio').value,
+        especialidade: document.getElementById('cadEspecialidade').value
+      })
+    });
+    Sessao.salvar(resp.token, resp.usuario);
+    redirecionar(resp.usuario);
+  } catch (err) { mostrarErro(err.message); }
+});
+
+// Se já estiver logado, vai direto pro dashboard
+if (Sessao.token() && Sessao.usuario()) redirecionar(Sessao.usuario());
+</script>
+</body>
+</html>

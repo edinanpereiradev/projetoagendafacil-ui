@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AgendaFácil — Prestador</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="app">
+    <div class="marca">✨ AgendaFácil</div>
+    <div class="sair" onclick="sair()">Sair</div>
+  </header>
+
+  <div class="container wide">
+    <div class="topo">
+      <p>Olá, <strong id="nomeUsuario"></strong> 👋 — painel do prestador</p>
+    </div>
+
+    <div id="mensagemGlobal"></div>
+
+    <div class="stats" id="stats"></div>
+
+    <div class="card">
+      <h3>Agenda de atendimentos</h3>
+      <div class="lista-agendamentos" id="listaAgenda" style="margin-top:12px"></div>
+    </div>
+
+    <div class="card">
+      <h3>Meus serviços</h3>
+      <div class="grid-servicos" id="listaServicos" style="margin-top:12px"></div>
+
+      <h4 style="margin-top:18px;font-size:14px">Novo serviço</h4>
+      <form id="formServico" class="linha" style="align-items:flex-end;flex-wrap:wrap;margin-top:6px">
+        <div style="flex:2;min-width:140px">
+          <label>Nome</label>
+          <input type="text" id="svNome" required placeholder="Ex: Sobrancelhas">
+        </div>
+        <div style="flex:1;min-width:100px">
+          <label>Preço (R$)</label>
+          <input type="number" id="svPreco" step="0.01" min="0" required placeholder="35.00">
+        </div>
+        <div style="flex:1;min-width:100px">
+          <label>Duração (min)</label>
+          <input type="number" id="svDuracao" min="5" step="5" required placeholder="30">
+        </div>
+        <button class="btn pequeno" type="submit" style="margin-bottom:1px">Adicionar</button>
+      </form>
+    </div>
+
+    <div class="card">
+      <h3>Horários de atendimento</h3>
+      <div id="listaDisponibilidade" style="margin-top:12px"></div>
+
+      <h4 style="margin-top:18px;font-size:14px">Novo horário</h4>
+      <form id="formDisponibilidade" class="linha" style="align-items:flex-end;flex-wrap:wrap;margin-top:6px">
+        <div style="flex:1;min-width:120px">
+          <label>Dia da semana</label>
+          <select id="dispDia">
+            <option value="0">Domingo</option>
+            <option value="1" selected>Segunda</option>
+            <option value="2">Terça</option>
+            <option value="3">Quarta</option>
+            <option value="4">Quinta</option>
+            <option value="5">Sexta</option>
+            <option value="6">Sábado</option>
+          </select>
+        </div>
+        <div style="flex:1;min-width:90px">
+          <label>Início</label>
+          <input type="time" id="dispInicio" value="09:00" required>
+        </div>
+        <div style="flex:1;min-width:90px">
+          <label>Fim</label>
+          <input type="time" id="dispFim" value="12:00" required>
+        </div>
+        <button class="btn pequeno" type="submit" style="margin-bottom:1px">Adicionar</button>
+      </form>
+    </div>
+
+    <div class="card">
+      <h3>Notificações</h3>
+      <div id="listaNotificacoes" style="margin-top:10px"></div>
+    </div>
+  </div>
+
+<script src="js/api.js"></script>
+<script src="js/prestador.js"></script>
+</body>
+</html>

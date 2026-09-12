@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AgendaFácil — Cliente</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="app">
+    <div class="marca">✨ AgendaFácil</div>
+    <div class="sair" onclick="sair()">Sair</div>
+  </header>
+
+  <div class="container">
+    <div class="topo">
+      <p>Olá, <strong id="nomeUsuario"></strong> 👋</p>
+    </div>
+
+    <div id="mensagemGlobal"></div>
+
+    <!-- Passo 1: escolher prestador -->
+    <div class="card" id="cardPrestadores">
+      <h3>Escolha um prestador</h3>
+      <div id="listaPrestadores" style="margin-top:12px"></div>
+    </div>
+
+    <!-- Passo 2: escolher serviço -->
+    <div class="card oculto" id="cardServicos">
+      <h3>Escolha o serviço</h3>
+      <div class="grid-servicos" id="listaServicos" style="margin-top:12px"></div>
+    </div>
+
+    <!-- Passo 3: escolher data/horário -->
+    <div class="card oculto" id="cardHorarios">
+      <h3>Escolha a data</h3>
+      <div class="calendario-dias" id="listaDias" style="margin-top:12px"></div>
+      <h3 style="margin-top:18px">Horários disponíveis</h3>
+      <div class="slots" id="listaSlots"></div>
+      <button class="btn oculto" id="btnConfirmar" onclick="confirmarAgendamento()">Confirmar agendamento</button>
+    </div>
+
+    <!-- Meus agendamentos -->
+    <div class="card">
+      <h3>Meus agendamentos</h3>
+      <div class="lista-agendamentos" id="listaMeusAgendamentos" style="margin-top:10px"></div>
+    </div>
+
+    <!-- Notificações -->
+    <div class="card">
+      <h3>Notificações</h3>
+      <div id="listaNotificacoes" style="margin-top:10px"></div>
+    </div>
+  </div>
+
+<script src="js/api.js"></script>
+<script src="js/cliente.js"></script>
+</body>
+</html>
