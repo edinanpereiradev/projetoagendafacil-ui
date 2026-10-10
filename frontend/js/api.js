@@ -1,5 +1,9 @@
 // api.js — comunicação com a API do AgendaFácil
-const API_BASE = 'http://localhost:3000/api';
+// Em produção (Vercel) use a URL do serviço criado no Render.
+const API_PRODUCAO = 'https://SEU-SERVICO.onrender.com/api';
+const API_BASE = ['localhost', '127.0.0.1', ''].includes(window.location.hostname)
+  ? 'http://localhost:3000/api'
+  : API_PRODUCAO;
 
 const Sessao = {
   salvar(token, usuario) {

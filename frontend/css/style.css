@@ -145,3 +145,17 @@ header.app .sair { color: var(--texto-suave); font-size: 13px; cursor: pointer; 
 .notif-item { padding: 10px 0; border-bottom: 1px solid #f3e6e6; font-size: 13px; }
 .notif-item:last-child { border-bottom: none; }
 .notif-item .data { color: var(--texto-suave); font-size: 11px; margin-top: 2px; }
+
+/* Remarcação (cliente) */
+.tag-link { color: var(--rosa-escuro); cursor: pointer; font-size: 12px; font-weight: 600; }
+.aviso-remarcacao {
+  background: #fdf3f3; border: 2px solid var(--rosa); border-radius: 14px;
+  padding: 14px 16px; margin-bottom: 16px; font-size: 13px; line-height: 1.5;
+}
+.aviso-remarcacao .tag-remove { display: inline-block; margin: 8px 0 0; }
+
+/* Relatório (prestador) */
+.tabela-rel { width: 100%; border-collapse: collapse; font-size: 13px; }
+.tabela-rel th { text-align: left; color: var(--texto-suave); font-weight: 600; padding: 8px 6px; border-bottom: 2px solid var(--rosa-claro); }
+.tabela-rel td { padding: 9px 6px; border-bottom: 1px solid #f3e6e6; }
+#relDetalhe, #relPorServico { overflow-x: auto; }
