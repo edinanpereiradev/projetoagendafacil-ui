@@ -148,8 +148,112 @@ function formatarDataHora(iso) {
   return new Date(iso.replace(' ', 'T') + 'Z').toLocaleString('pt-BR');
 }
 
+// ---------- Relatório de atendimentos ----------
+let ultimoRelatorio = null;
+
+function esc(txt) {
+  return String(txt ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+function moeda(v) { return 'R$ ' + v.toFixed(2).replace('.', ','); }
+
+// Função pura: recebe a lista de agendamentos e o período (YYYY-MM-DD) e devolve os totais.
+function calcularRelatorio(lista, de, ate) {
+  const itens = lista
+    .filter(a => a.data >= de && a.data <= ate)
+    .sort((a, b) => (a.data + a.hora).localeCompare(b.data + b.hora));
+
+  const ativos = itens.filter(a => a.status !== 'cancelado');
+  const cancelados = itens.length - ativos.length;
+  const porServico = {};
+  itens.forEach(a => {
+    const s = porServico[a.servico] || (porServico[a.servico] = { atendimentos: 0, cancelados: 0, receita: 0 });
+    if (a.status === 'cancelado') { s.cancelados++; return; }
+    s.atendimentos++;
+    s.receita += Number(a.preco) || 0;
+  });
+
+  return {
+    de, ate, itens, porServico,
+    total: itens.length,
+    atendimentos: ativos.length,
+    cancelados,
+    taxaCancelamento: itens.length ? (cancelados / itens.length) * 100 : 0,
+    receita: ativos.reduce((soma, a) => soma + (Number(a.preco) || 0), 0)
+  };
+}
+
+async function gerarRelatorio() {
+  const de = document.getElementById('relDe').value;
+  const ate = document.getElementById('relAte').value;
+  if (de > ate) { erroGlobal('A data inicial não pode ser depois da final.'); return; }
+
+  try {
+    const lista = await api('/agendamentos/meus');
+    ultimoRelatorio = calcularRelatorio(lista, de, ate);
+  } catch (err) { erroGlobal(err.message); return; }
+  const r = ultimoRelatorio;
+
+  document.getElementById('relResumo').innerHTML = `
+    <div class="stat-card"><div class="valor">${r.atendimentos}</div><div class="rotulo">Atendimentos no período</div></div>
+    <div class="stat-card"><div class="valor">${r.cancelados}</div><div class="rotulo">Cancelados (${r.taxaCancelamento.toFixed(0)}%)</div></div>
+    <div class="stat-card"><div class="valor">${moeda(r.receita)}</div><div class="rotulo">Receita prevista</div></div>
+    <div class="stat-card"><div class="valor">${r.atendimentos ? moeda(r.receita / r.atendimentos) : '—'}</div><div class="rotulo">Valor médio por atendimento</div></div>`;
+
+  const servicos = Object.entries(r.porServico).sort((a, b) => b[1].receita - a[1].receita);
+  document.getElementById('relPorServico').innerHTML = r.total === 0
+    ? '<p style="color:#8a7576;font-size:13px">Nenhum agendamento neste período.</p>'
+    : `<h4 style="margin:18px 0 6px;font-size:14px">Por serviço</h4>
+       <table class="tabela-rel">
+         <thead><tr><th>Serviço</th><th>Atend.</th><th>Cancel.</th><th>Receita</th></tr></thead>
+         <tbody>${servicos.map(([nome, s]) =>
+           `<tr><td>${esc(nome)}</td><td>${s.atendimentos}</td><td>${s.cancelados}</td><td>${moeda(s.receita)}</td></tr>`).join('')}</tbody>
+       </table>`;
+
+  document.getElementById('relDetalhe').innerHTML = r.total === 0 ? '' : `
+    <h4 style="margin:18px 0 6px;font-size:14px">Detalhe</h4>
+    <table class="tabela-rel">
+      <thead><tr><th>Data</th><th>Cliente</th><th>Serviço</th><th>Status</th><th>Valor</th></tr></thead>
+      <tbody>${r.itens.map(a =>
+        `<tr><td>${formatarData(a.data)} ${esc(a.hora)}</td><td>${esc(a.clienteNome)}</td><td>${esc(a.servico)}</td>
+         <td><span class="badge ${esc(a.status)}">${esc(a.status)}</span></td><td>${moeda(Number(a.preco) || 0)}</td></tr>`).join('')}</tbody>
+    </table>`;
+
+  document.getElementById('btnCsv').classList.toggle('oculto', r.total === 0);
+}
+
+function exportarRelatorioCsv() {
+  if (!ultimoRelatorio) return;
+  const campo = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
+  const linhas = [['Data', 'Hora', 'Cliente', 'Serviço', 'Status', 'Valor'].map(campo).join(';')];
+  ultimoRelatorio.itens.forEach(a => {
+    linhas.push([formatarData(a.data), a.hora, a.clienteNome, a.servico, a.status,
+      (Number(a.preco) || 0).toFixed(2).replace('.', ',')].map(campo).join(';'));
+  });
+  // BOM para o Excel abrir os acentos corretamente
+  const blob = new Blob(['\ufeff' + linhas.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = `relatorio_${ultimoRelatorio.de}_a_${ultimoRelatorio.ate}.csv`;
+  link.click();
+  URL.revokeObjectURL(link.href);
+}
+
+document.getElementById('formRelatorio').addEventListener('submit', (e) => {
+  e.preventDefault();
+  gerarRelatorio();
+});
+
+// Período padrão: mês atual
+(function definirPeriodoPadrao() {
+  const hoje = new Date();
+  const fmt = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  document.getElementById('relDe').value = fmt(new Date(hoje.getFullYear(), hoje.getMonth(), 1));
+  document.getElementById('relAte').value = fmt(new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0));
+})();
+
 carregarStats();
 carregarAgenda();
 carregarServicos();
 carregarDisponibilidade();
 carregarNotificacoes();
+gerarRelatorio();

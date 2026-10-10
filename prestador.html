@@ -27,6 +27,26 @@
     </div>
 
     <div class="card">
+      <h3>Relatório de atendimentos</h3>
+      <form id="formRelatorio" class="linha" style="align-items:flex-end;flex-wrap:wrap;margin-top:6px">
+        <div style="flex:1;min-width:130px">
+          <label>De</label>
+          <input type="date" id="relDe" required>
+        </div>
+        <div style="flex:1;min-width:130px">
+          <label>Até</label>
+          <input type="date" id="relAte" required>
+        </div>
+        <button class="btn pequeno" type="submit" style="margin-bottom:1px">Gerar relatório</button>
+      </form>
+
+      <div id="relResumo" class="stats" style="margin-top:16px"></div>
+      <div id="relPorServico"></div>
+      <div id="relDetalhe"></div>
+      <button class="btn secundario oculto" id="btnCsv" onclick="exportarRelatorioCsv()">Exportar CSV</button>
+    </div>
+
+    <div class="card">
       <h3>Meus serviços</h3>
       <div class="grid-servicos" id="listaServicos" style="margin-top:12px"></div>
 
