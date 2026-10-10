@@ -11,6 +11,10 @@ let estado = {
   horaEscolhida: null,
 };
 
+// Remarcação: guarda o agendamento que será trocado pelo novo horário
+let remarcando = null;
+let meusAgendamentos = [];
+
 function sair() { Sessao.limpar(); window.location.href = 'index.html'; }
 
 function erroGlobal(msg) {
@@ -129,6 +133,28 @@ async function escolherData(iso, elClicado) {
 }
 
 async function confirmarAgendamento() {
+  const antigo = remarcando;
+
+  // US09: mesmo prestador e serviço do agendamento original -> endpoint de remarcação da API
+  const remarcacaoDireta = antigo && antigo.idPrestador && antigo.idServico
+    && antigo.idPrestador === estado.prestadorId && antigo.idServico === estado.servicoId;
+
+  if (remarcacaoDireta) {
+    try {
+      await api(`/agendamentos/${antigo.id}/remarcar`, {
+        method: 'PUT',
+        body: JSON.stringify({ data: estado.dataEscolhida, hora: estado.horaEscolhida })
+      });
+    } catch (err) { erroGlobal(err.message); return; }
+    sucessoGlobal('Agendamento remarcado! ✅');
+    encerrarRemarcacao();
+    document.getElementById('btnConfirmar').classList.add('oculto');
+    carregarMeusAgendamentos();
+    carregarNotificacoes();
+    escolherData(estado.dataEscolhida, document.querySelector('.dia-btn.ativo'));
+    return;
+  }
+
   try {
     await api('/agendamentos', {
       method: 'POST',
@@ -139,17 +165,67 @@ async function confirmarAgendamento() {
         hora: estado.horaEscolhida
       })
     });
+  } catch (err) { erroGlobal(err.message); return; }
+
+  if (antigo) {
+    // O novo horário já está garantido; só agora o antigo é cancelado.
+    try {
+      await api(`/agendamentos/${antigo.id}/cancelar`, { method: 'PUT' });
+      sucessoGlobal('Agendamento remarcado! ✅');
+    } catch (err) {
+      erroGlobal(`Novo horário confirmado, mas o anterior não foi cancelado: ${err.message} Cancele-o manualmente.`);
+    }
+    encerrarRemarcacao();
+  } else {
     sucessoGlobal('Agendamento confirmado! ✅');
-    document.getElementById('btnConfirmar').classList.add('oculto');
-    carregarMeusAgendamentos();
-    carregarNotificacoes();
-    // Recarrega os horários para refletir o slot ocupado
-    escolherData(estado.dataEscolhida, document.querySelector('.dia-btn.ativo'));
-  } catch (err) { erroGlobal(err.message); }
+  }
+
+  document.getElementById('btnConfirmar').classList.add('oculto');
+  carregarMeusAgendamentos();
+  carregarNotificacoes();
+  // Recarrega os horários para refletir o slot ocupado
+  escolherData(estado.dataEscolhida, document.querySelector('.dia-btn.ativo'));
+}
+
+function iniciarRemarcacao(id) {
+  const a = meusAgendamentos.find(x => x.id === id);
+  if (!a) return;
+  remarcando = a;
+  estado = { prestadorId: null, servicoId: null, dataEscolhida: null, horaEscolhida: null };
+
+  document.querySelectorAll('.servico-item.selecionado').forEach(el => el.classList.remove('selecionado'));
+  document.getElementById('cardServicos').classList.add('oculto');
+  document.getElementById('cardHorarios').classList.add('oculto');
+  document.getElementById('btnConfirmar').textContent = 'Confirmar remarcação';
+
+  const dados = `${a.servico} com ${a.prestadorNome} (${formatarData(a.data)} às ${a.hora})`;
+  if (a.idPrestador && a.idServico) {
+    // Mantém prestador e serviço: o cliente só escolhe a nova data e horário.
+    estado.prestadorId = a.idPrestador;
+    estado.servicoId = a.idServico;
+    document.getElementById('listaSlots').innerHTML = '';
+    document.getElementById('cardHorarios').classList.remove('oculto');
+    montarDias();
+    document.getElementById('textoRemarcacao').textContent =
+      `Remarcando ${dados}. Escolha a nova data e o novo horário abaixo.`;
+  } else {
+    document.getElementById('textoRemarcacao').textContent =
+      `Remarcando ${dados}. Escolha o novo prestador, serviço, data e horário. ` +
+      'O agendamento atual só é cancelado depois que o novo for confirmado.';
+  }
+  document.getElementById('avisoRemarcacao').classList.remove('oculto');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function encerrarRemarcacao() {
+  remarcando = null;
+  document.getElementById('avisoRemarcacao').classList.add('oculto');
+  document.getElementById('btnConfirmar').textContent = 'Confirmar agendamento';
 }
 
 async function carregarMeusAgendamentos() {
   const lista = await api('/agendamentos/meus');
+  meusAgendamentos = lista;
   const box = document.getElementById('listaMeusAgendamentos');
   box.innerHTML = '';
   if (lista.length === 0) {
@@ -166,7 +242,7 @@ async function carregarMeusAgendamentos() {
       </div>
       <div style="text-align:right">
         <span class="badge ${a.status}">${a.status}</span>
-        ${a.status === 'confirmado' ? `<div><span class="tag-remove" onclick="cancelar(${a.id})">Cancelar</span></div>` : ''}
+        ${a.status === 'confirmado' ? `<div><span class="tag-link" onclick="iniciarRemarcacao(${a.id})">Remarcar</span><span class="tag-remove" onclick="cancelar(${a.id})">Cancelar</span></div>` : ''}
       </div>`;
     box.appendChild(div);
   });
@@ -176,6 +252,7 @@ async function cancelar(id) {
   if (!confirm('Deseja cancelar este agendamento?')) return;
   try {
     await api(`/agendamentos/${id}/cancelar`, { method: 'PUT' });
+    if (remarcando && remarcando.id === id) encerrarRemarcacao();
     sucessoGlobal('Agendamento cancelado.');
     carregarMeusAgendamentos();
     carregarNotificacoes();

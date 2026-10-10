@@ -19,6 +19,12 @@
 
     <div id="mensagemGlobal"></div>
 
+    <!-- Aviso exibido enquanto o cliente remarca um agendamento -->
+    <div class="aviso-remarcacao oculto" id="avisoRemarcacao">
+      <p id="textoRemarcacao"></p>
+      <span class="tag-remove" onclick="encerrarRemarcacao()">Desistir da remarcação</span>
+    </div>
+
     <!-- Passo 1: escolher prestador -->
     <div class="card" id="cardPrestadores">
       <h3>Escolha um prestador</h3>
